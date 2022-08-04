@@ -1,10 +1,11 @@
+import imp
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import os
 import pickle as pkl
 import numpy as np
-
+import cdflib 
 from utils import *
 
 
@@ -70,23 +71,30 @@ class Dataset_HUMAN(Dataset):
             print(pkl_file)
             x_list = self.read_pickle(pkl_file)
             self.x_list.extend(x_list)
+            break
         self.total_frames = len(self.x_list)
 
     def read_pickle(self, pkl_file):
+
+        cdf = cdflib.CDF(pkl_file)
+# print(cdf.cdf_info())
+        info = cdf.varget("Pose")
+
         # u = pkl._Unpickler(open(pkl_file,'rb'))
         # u.encoding = 'latin1'
         fr = open(pkl_file, 'rb')  # open的参数是pkl文件的路径
-        seq = pkl.load(fr)  # 读取pkl文件的内容
         x_list = []
-        for jointPositions in seq['jointPositions']:
-            # print( jointPositions)
-            total_frames = int(jointPositions.shape[0]/3)
-            skeleton_3d = jointPositions.reshape(-1, 3)
+        for i, jointPositions in enumerate(info[0]):
+            points = jointPositions.reshape(-1, 3)*0.001  # 世界坐标系的点
+            # print( points)
+
+            # total_frames = int(jointPositions.shape[0]/3)
+            # skeleton_3d = jointPositions.reshape(-1, 3)
             # print(skeleton_3d[0])
             # for t in range(total_frames):
             #     # print(seq['cam_poses'][t],jointPositions[t])
             #     skeleton_3d = jointPos2camPos(seq['cam_poses'][t], jointPositions[t])
-            x, _ = self.skeleton2tensor(skeleton_3d)
+            x, _ = self.skeleton2tensor(points)
 
             #     # transform
             #     if self.transform is not None:
@@ -98,6 +106,18 @@ class Dataset_HUMAN(Dataset):
 #reference https://blog.csdn.net/weixin_45436729/article/details/124770186
     def skeleton2tensor(self, skeleton_3d):
         # joint positions
+        # x_0, y_0, z_0 = skeleton_3d[11]  # LShoulder
+        # x_1, y_1, z_1 = skeleton_3d[14]  # RShoulder
+        # x_2, y_2, z_2 = skeleton_3d[0]  # LHip
+        # x_3, y_3, z_3 = skeleton_3d[1]  # RHip
+        # x_4, y_4, z_4 = skeleton_3d[12]  # LElbow
+        # x_5, y_5, z_5 = skeleton_3d[13]  # LWrist
+        # x_6, y_6, z_6 = skeleton_3d[15]  # RElbow
+        # x_7, y_7, z_7 = skeleton_3d[16]  # RWrist
+        # x_8, y_8, z_8 = skeleton_3d[5]  # LKnee
+        # x_9, y_9, z_9 = skeleton_3d[6]  # LAnkle
+        # x_10, y_10, z_10 = skeleton_3d[2]  # Rknee
+        # x_11, y_11, z_11 = skeleton_3d[3]  # RAnkle
         x_0, y_0, z_0 = skeleton_3d[17]  # LShoulder
         x_1, y_1, z_1 = skeleton_3d[25]  # RShoulder
         x_2, y_2, z_2 = skeleton_3d[0]  # LHip
@@ -110,7 +130,6 @@ class Dataset_HUMAN(Dataset):
         x_9, y_9, z_9 = skeleton_3d[8]  # LAnkle
         x_10, y_10, z_10 = skeleton_3d[2]  # Rknee
         x_11, y_11, z_11 = skeleton_3d[3]  # RAnkle
-
         # convert to spherical representation
         r_1, theta_1, phi_1 = cartesian2spherical(
             np.array([x_1, y_1, z_1]) - np.array([x_0, y_0, z_0]))
