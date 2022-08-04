@@ -71,7 +71,7 @@ class Dataset_HUMAN(Dataset):
             print(pkl_file)
             x_list = self.read_pickle(pkl_file)
             self.x_list.extend(x_list)
-            break
+            # break
         self.total_frames = len(self.x_list)
 
     def read_pickle(self, pkl_file):
