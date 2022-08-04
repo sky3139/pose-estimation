@@ -5,10 +5,11 @@ from torch.utils.data import DataLoader
 import os
 
 from models import VAE
-from dataset import Dataset_AE
+from dataset import Dataset_HUMAN
 
 # Path setting
-data_path = "./data/3DPW/sequenceFiles"
+data_path = "./data/human"
+# data_path="/home/u20/Visualization-of-Human3.6M-Dataset"
 model_path = "./saved/models/vae-noise"
 
 # Device setting
@@ -24,9 +25,9 @@ log_interval = 100
 
 if __name__ == '__main__':
     # Load data
-    train_set = Dataset_AE(data_path=data_path, mode='train')
-    val_set = Dataset_AE(data_path=data_path, mode='validation')
-    test_set = Dataset_AE(data_path=data_path, mode='test')
+    train_set = Dataset_HUMAN(data_path=data_path, mode='train')
+    val_set = Dataset_HUMAN(data_path=data_path, mode='validation')
+    test_set = Dataset_HUMAN(data_path=data_path, mode='test')
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
@@ -70,7 +71,7 @@ if __name__ == '__main__':
             # backward & optimize
             loss.backward()
             optimizer.step()
-            print(batch_idx)
+            # print(data)
             if (batch_idx + 1) % log_interval == 0:
                 print("epoch {:3d} | iteration {:5d} | Loss {:.6f} | Rec {:.6f} | Reg {:.6f} | Kld {:.6f}".format(epoch+1, batch_idx+1, loss.item(), rec_loss.item(), reg_loss.item(), kld_loss.item()))
 

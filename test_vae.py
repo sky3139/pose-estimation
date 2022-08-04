@@ -44,14 +44,14 @@ for pkl_file in pkl_files:
             with torch.no_grad():
                 _, x_recon, _, _ = vae(x_t)
                 y_list.append(tensor2skeleton(x_recon, r_t).squeeze(0).detach().cpu().numpy())                
-                print(y_list[-1])
+                # print(y_list[-1])
             # print(x_list, y_list)
         break
     break
 
 x_list = np.array(x_list)
 y_list = np.array(y_list)
-print(x_list.shape, y_list.shape)
+# print(x_list.shape, y_list.shape)
 
 def run(t):
     # print(t)
