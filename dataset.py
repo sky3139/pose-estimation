@@ -82,7 +82,6 @@ class Dataset_HUMAN(Dataset):
 
         # u = pkl._Unpickler(open(pkl_file,'rb'))
         # u.encoding = 'latin1'
-        fr = open(pkl_file, 'rb')  # open的参数是pkl文件的路径
         x_list = []
         for i, jointPositions in enumerate(info[0]):
             points = jointPositions.reshape(-1, 3)*0.001  # 世界坐标系的点
