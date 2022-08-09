@@ -180,6 +180,6 @@ ax_right.set_zlabel('Z')
 lines_left = [ax_left.plot([], [], [], 'royalblue', marker='o')[0] for i in range(11)]
 lines_right = [ax_right.plot([], [], [], 'royalblue', marker='o')[0] for i in range(11)]
 ani = animation.FuncAnimation(fig, run, np.arange(total_frames), interval=200)
-FFwriter = animation.FFMpegWriter(fps=5)
-ani.save('./saved/vae_reconstruction.mp4', writer=FFwriter)
+# FFwriter = animation.FFMpegWriter(fps=5)
+# ani.save('./saved/vae_reconstruction.mp4', writer=FFwriter)
 # plt.show()
