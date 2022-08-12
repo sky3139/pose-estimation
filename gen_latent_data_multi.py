@@ -8,7 +8,8 @@ from icecream import ic as print
 from utils import *
 
 # Hyperparameters
-data_path = "./data/3DPW/sequenceFiles"
+# data_path = "./data/3DPW/sequenceFiles"
+data_path = "data/human"
 mode = 'train'
 
 # Generate data
@@ -45,11 +46,13 @@ for pkl_file in pkl_files:
     # print(seq.keys())
     # print(seq['poses2d'][0].shape, seq['jointPositions'][0].shape)
     for jointPositions, poses2d in zip(seq['jointPositions'], seq['poses2d']):
+        print(jointPositions)
         total_frames = jointPositions.shape[0]
         jointPositions = jointPositions.reshape(total_frames, -1, 3)
         # print(jointPositions.shape)
         for t in range(total_frames-5):
             # frame t
+            # 
             skeleton_t = jointPos2camPos(seq['cam_poses'][t], jointPositions[t])
             # uv_hat = seq['cam_intrinsics'] @ tensor2skeleton(*skeleton2tensor(skeleton_t)).T
             # uv_hat /= uv_hat[-1]
@@ -104,7 +107,7 @@ for pkl_file in pkl_files:
             r_3_list.append(r_3)
             r_4_list.append(r_4)
             r_5_list.append(r_5)
-            
+            # print(x_1_list)
 
 # Save data   
 x_list = np.stack(x_list, axis=0)

@@ -6,85 +6,80 @@ import pickle as pkl
 import numpy as np
 # from icecream import ic as print
 from utils import *
-def skeleton2tensor( skeleton_3d):
-    # joint positions
-    # x_0, y_0, z_0 = skeleton_3d[11]  # LShoulder
-    # x_1, y_1, z_1 = skeleton_3d[14]  # RShoulder
-    # x_2, y_2, z_2 = skeleton_3d[0]  # LHip
-    # x_3, y_3, z_3 = skeleton_3d[1]  # RHip
-    # x_4, y_4, z_4 = skeleton_3d[12]  # LElbow
-    # x_5, y_5, z_5 = skeleton_3d[13]  # LWrist
-    # x_6, y_6, z_6 = skeleton_3d[15]  # RElbow
-    # x_7, y_7, z_7 = skeleton_3d[16]  # RWrist
-    # x_8, y_8, z_8 = skeleton_3d[5]  # LKnee
-    # x_9, y_9, z_9 = skeleton_3d[6]  # LAnkle
-    # x_10, y_10, z_10 = skeleton_3d[2]  # Rknee
-    # x_11, y_11, z_11 = skeleton_3d[3]  # RAnkle
-    x_0, y_0, z_0 = skeleton_3d[17]  # LShoulder
-    x_1, y_1, z_1 = skeleton_3d[25]  # RShoulder
-    x_2, y_2, z_2 = skeleton_3d[0]  # LHip
-    x_3, y_3, z_3 = skeleton_3d[1]  # RHip
-    x_4, y_4, z_4 = skeleton_3d[18]  # LElbow
-    x_5, y_5, z_5 = skeleton_3d[19]  # LWrist
-    x_6, y_6, z_6 = skeleton_3d[26]  # RElbow
-    x_7, y_7, z_7 = skeleton_3d[27]  # RWrist
-    x_8, y_8, z_8 = skeleton_3d[7]  # LKnee
-    x_9, y_9, z_9 = skeleton_3d[8]  # LAnkle
-    x_10, y_10, z_10 = skeleton_3d[2]  # Rknee
-    x_11, y_11, z_11 = skeleton_3d[3]  # RAnkle
-    # convert to spherical representation
-    r_1, theta_1, phi_1 = cartesian2spherical(
-        np.array([x_1, y_1, z_1]) - np.array([x_0, y_0, z_0]))
-    r_2, theta_2, phi_2 = cartesian2spherical(
-        np.array([x_2, y_2, z_2]) - np.array([(x_0+x_1)/2, (y_0+y_1)/2, (z_0+z_1)/2]))
-    r_3, theta_3, phi_3 = cartesian2spherical(
-        np.array([x_3, y_3, z_3]) - np.array([x_2, y_2, z_2]))
-    r_4, theta_4, phi_4 = cartesian2spherical(
-        np.array([x_4, y_4, z_4]) - np.array([x_0, y_0, z_0]))
-    r_5, theta_5, phi_5 = cartesian2spherical(
-        np.array([x_5, y_5, z_5]) - np.array([x_4, y_4, z_4]))
-    r_6, theta_6, phi_6 = cartesian2spherical(
-        np.array([x_6, y_6, z_6]) - np.array([x_1, y_1, z_1]))
-    r_7, theta_7, phi_7 = cartesian2spherical(
-        np.array([x_7, y_7, z_7]) - np.array([x_6, y_6, z_6]))
-    r_8, theta_8, phi_8 = cartesian2spherical(
-        np.array([x_8, y_8, z_8]) - np.array([x_2, y_2, z_2]))
-    r_9, theta_9, phi_9 = cartesian2spherical(
-        np.array([x_9, y_9, z_9]) - np.array([x_8, y_8, z_8]))
-    r_10, theta_10, phi_10 = cartesian2spherical(
-        np.array([x_10, y_10, z_10]) - np.array([x_3, y_3, z_3]))
-    r_11, theta_11, phi_11 = cartesian2spherical(
-        np.array([x_11, y_11, z_11]) - np.array([x_10, y_10, z_10]))
-
-    x = torch.Tensor([x_0, y_0, z_0, theta_1, phi_1, theta_2, phi_2, theta_3, phi_3, theta_4, phi_4, theta_5,
-                        phi_5, theta_6, phi_6, theta_7, phi_7, theta_8, phi_8, theta_9, phi_9, theta_10, phi_10, theta_11, phi_11])
-    r = torch.Tensor([r_1, r_2, r_3, r_4, r_5, r_6,
-                        r_7, r_8, r_9, r_10, r_11])
-    return x, r
+import test_human
+skeleton2tensor = test_human.human_skeleton2tensor
 # Hyperparameters
 data_path = "./data/human"
 mode = 'train'
 np.set_printoptions(suppress=True)
 
-folder_path = "data/human/test"
+folder_path = "data/human/txt"
 pkl_files = [os.path.join(folder_path, pkl) for pkl in os.listdir(folder_path)]
 # print(pkl_files)
 frame_datas = []
-
 for file_path in pkl_files:
     print(file_path)
+    file = open(file_path)
+    line = file.readline()
+    total_frames = int(line)
+    line = file.readline().split(' ')[1:-1]
+    resolution = [int(i) for i in line]
+    # print(resolution)
+    line = file.readline().split(' ')[1:-1]
+    rotation = np.array([float(i) for i in line]).reshape(3, 3)
+    # print(rotation)
+    line = file.readline().split(' ')[1:-1]
+    translation = [float(i) for i in line]
+    _t = translation[2]
+    translation[2] = translation[1]
+    translation[1] = _t
+    line = file.readline().split(' ')[1:-1]
+    focal_length = [float(i) for i in line]
 
-    u = pkl._Unpickler(open(file_path, 'rb'))
-    u.encoding = 'latin1'
-    seq = u.load()
-    x_list = []
-    ps3d=seq['jointPositions']
-    ps2d=seq['poses2d']
-    cam=seq['CAM_P3D']
-    cam_intrinsics=seq['cam_intrinsics']
-    frame_data=[]
-    for i,skeleton_3d in enumerate(cam):
-        frame_data.append([ps3d[i], cam[i], ps2d[i]])
+    line = file.readline().split(' ')[1:-1]
+    c_param = [float(i) for i in line]
+
+    line = file.readline().split(' ')[1:-1]
+    k_param = [float(i) for i in line]
+
+    line = file.readline().split(' ')[1:-1]
+    p_param = [float(i) for i in line]
+    line = file.readline()
+
+    extrinsics = np.column_stack((rotation, np.array(translation)*0.001))
+    extrinsics = np.row_stack((extrinsics, np.array([0, 0, 0, 1])))
+    cam_intrinsics = np.array([focal_length[0], 0, c_param[0],
+                               0, focal_length[0], c_param[1], 0, 0, 1]).reshape(3, 3)
+    # print(cam_intrinsics)
+
+    frame_data = []
+    while 1:
+        line = file.readline()
+        if not line:
+            break
+        line = line.split(' ')[1:-1]
+        pos = np.array([float(i) for i in line]).reshape(-1, 3)*0.001  # 3D
+        
+        pos_4 = np.insert(pos, 3, values=1, axis=1)
+        # print(extrinsics,pos)
+        cam_join_pos = np.dot(extrinsics, pos_4.T).T
+        cam_join_pos = np.delete(cam_join_pos, 3, axis=1)  # 2D
+
+        # print(cam_join_pos)
+        gui_pos = []
+        for p in cam_join_pos:
+            _p = p/p[2]
+            # temp=_p[2]
+            # _p[2]=_p[1]
+            # _p[1]=temp
+            gui_pos.append(_p)
+            # print(p,_p)
+        # print(np.array(gui_pos))
+        pix_pos = np.dot(cam_intrinsics, np.array(gui_pos).T).T
+        pix_pos = np.delete(pix_pos, 2, axis=1)  # 像素
+        frame_data.append([pos, cam_join_pos, pix_pos])
+        # print(len(cam_join_pos))
+        # break
     frame_datas.append(frame_data)
 # Generate data
 x_list = []
@@ -129,6 +124,13 @@ def get12(skeleton_3d):
     return np.array(ans)
 
 
+def jointPos2camPos(jointPositions):
+
+    jointPositions = jointPositions.reshape(-1, 3)*0.001
+    jointPositions = np.insert(jointPositions, 3, values=1, axis=1).T
+    skeleton_t = np.dot(extrinsics, jointPositions).T
+    skeleton_t = np.delete(skeleton_t, -1, axis=1)
+    return skeleton_t
 
 
 for frame_data in frame_datas:
@@ -189,14 +191,13 @@ for frame_data in frame_datas:
         r_3_list.append(r_3)
         r_4_list.append(r_4)
         r_5_list.append(r_5)
-        # print(x_1_list)
+        print(x_1_list)
 #     break
 # break
 # Save data
 x_list = np.stack(x_list, axis=0)
 r_list = np.stack(r_list, axis=0)
 intrinsics_list = np.stack(intrinsics_list, axis=0)
-print(intrinsics_list)
 uv_1_list = np.stack(uv_1_list, axis=0)
 uv_2_list = np.stack(uv_2_list, axis=0)
 uv_3_list = np.stack(uv_3_list, axis=0)
@@ -227,9 +228,5 @@ data = {'x': x_list, 'r': r_list, 'intrinsics': intrinsics_list,
         'pos_1': pos_1_list, 'pos_2': pos_2_list, 'pos_3': pos_3_list, 'pos_4': pos_4_list, 'pos_5': pos_5_list,
         'x_1': x_1_list, 'x_2': x_2_list, 'x_3': x_3_list, 'x_4': x_4_list, 'x_5': x_5_list,
         'r_1': r_1_list, 'r_2': r_2_list, 'r_3': r_3_list, 'r_4': r_4_list, 'r_5': r_5_list, }
-with open('./data/human/latent-{}-multi.pkl'.format("train1"), 'wb') as handle:
-    pkl.dump(data, handle, protocol=pkl.HIGHEST_PROTOCOL)
-with open('./data/human/latent-{}-multi.pkl'.format("test1"), 'wb') as handle:
-    pkl.dump(data, handle, protocol=pkl.HIGHEST_PROTOCOL)
-with open('./data/human/latent-{}-multi.pkl'.format("validation1"), 'wb') as handle:
+with open('./data/latent/latent-{}-multi.pkl'.format(mode), 'wb') as handle:
     pkl.dump(data, handle, protocol=pkl.HIGHEST_PROTOCOL)

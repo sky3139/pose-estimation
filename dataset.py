@@ -7,7 +7,7 @@ import pickle as pkl
 import numpy as np
 import cdflib 
 from utils import *
-
+np.set_printoptions(suppress=True)
 
 class Dataset_AE(Dataset):
     def __init__(self, data_path, mode='train', transform=None):
@@ -25,26 +25,24 @@ class Dataset_AE(Dataset):
         self.total_frames = len(self.x_list)
 
     def read_pickle(self, pkl_file):
+        print(pkl_file)
         u = pkl._Unpickler(open(pkl_file, 'rb'))
         u.encoding = 'latin1'
         seq = u.load()
         x_list = []
         for jointPositions in seq['jointPositions']:
             total_frames = jointPositions.shape[0]
-            print(jointPositions, jointPositions.shape[0])
-
-            jointPositions = jointPositions.reshape(total_frames, -1, 3)
+            # print(jointPositions, jointPositions.shape[0])
+            # print(total_frames)
+            jointPositions = jointPositions.reshape( -1, 3)
             # print(jointPositions.shape)
             for t in range(total_frames):
+                # print(seq['cam_poses'][t], jointPositions[t])
                 skeleton_3d = jointPos2camPos(
                     seq['cam_poses'][t], jointPositions[t])
                 x, _ = skeleton2tensor(skeleton_3d)
-                # print(seq['cam_poses'][t],"and",jointPositions[t],"\n")
-                # transform
-                print(len(skeleton_3d[0]))
                 if self.transform is not None:
                     x = self.transform(x)
-
                 x_list.append(x)
 
         return x_list
@@ -68,38 +66,121 @@ class Dataset_HUMAN(Dataset):
                           for pkl in os.listdir(self.folder_path)]
         self.x_list = []
         for pkl_file in self.pkl_files:
-            print(pkl_file)
+            print(3,pkl_file)
             x_list = self.read_pickle(pkl_file)
             self.x_list.extend(x_list)
             # break
         self.total_frames = len(self.x_list)
 
-    def read_pickle(self, pkl_file):
-
-        cdf = cdflib.CDF(pkl_file)
-# print(cdf.cdf_info())
-        info = cdf.varget("Pose")
-
-        # u = pkl._Unpickler(open(pkl_file,'rb'))
-        # u.encoding = 'latin1'
+    def read_pickle(self, file_path):
+        print(file_path)
+        u = pkl._Unpickler(open(file_path, 'rb'))
+        u.encoding = 'latin1'
+        seq = u.load()
         x_list = []
-        for i, jointPositions in enumerate(info[0]):
-            points = jointPositions.reshape(-1, 3)*0.001  # 世界坐标系的点
-            # print( points)
-
-            # total_frames = int(jointPositions.shape[0]/3)
-            # skeleton_3d = jointPositions.reshape(-1, 3)
-            # print(skeleton_3d[0])
+        ps3d=seq['jointPositions']
+        ps2d=seq['poses2d']
+        cam=seq['CAM_P3D']
+        for i,skeleton_3d in enumerate(cam):
+            # total_frames = jointPositions.shape[0]
+            # # print(jointPositions, jointPositions.shape[0])
+            # print(jointPositions)
+            # jointPositions = jointPositions.reshape( -1, 3)
+            # # print(jointPositions.shape)
             # for t in range(total_frames):
-            #     # print(seq['cam_poses'][t],jointPositions[t])
-            #     skeleton_3d = jointPos2camPos(seq['cam_poses'][t], jointPositions[t])
-            x, _ = self.skeleton2tensor(points)
-
-            #     # transform
+            #     # print(seq['cam_poses'][t], jointPositions[t])
+            #     skeleton_3d = jointPos2camPos(
+            #         seq['cam_poses'][t], jointPositions[t])
+            x, _ = self.skeleton2tensor(skeleton_3d)
             #     if self.transform is not None:
             #         x = self.transform(x)
-
             x_list.append(x)
+        # print(4,file_path)
+        # file = open(file_path)
+        # line = file.readline()
+        # total_frames = int(line)
+        # line = file.readline().split(' ')[1:-1]
+        # resolution = [int(i) for i in line]
+        # # print(resolution)
+        # line = file.readline().split(' ')[1:-1]
+        # rotation = np.array([float(i) for i in line]).reshape(3, 3)
+        # # print(rotation)
+        # line = file.readline().split(' ')[1:-1]
+        # translation = [float(i) for i in line]
+        # _t = translation[2]
+        # translation[2] = translation[1]
+        # translation[1] = _t
+        # line = file.readline().split(' ')[1:-1]
+        # focal_length = [float(i) for i in line]
+
+        # line = file.readline().split(' ')[1:-1]
+        # c_param = [float(i) for i in line]
+
+        # line = file.readline().split(' ')[1:-1]
+        # k_param = [float(i) for i in line]
+
+        # line = file.readline().split(' ')[1:-1]
+        # p_param = [float(i) for i in line]
+        # line = file.readline()
+
+        # extrinsics = np.column_stack((rotation, np.array(translation)*0.001))
+        # extrinsics = np.row_stack((extrinsics, np.array([0, 0, 0, 1])))
+        # cam_intrinsics = np.array([focal_length[0], 0, c_param[0],
+        #                         0, focal_length[0], c_param[1], 0, 0, 1]).reshape(3, 3)
+        # print(cam_intrinsics)
+        # print(extrinsics)
+        # frame_data = []
+        # isread=False
+        # while 1:
+        #     line = file.readline()
+        #     if not line:
+        #         break
+        #     line = line.split(' ')[1:-1]
+        #     pos = np.array([float(i) for i in line]).reshape(-1, 3)*0.001  # 3D
+            
+        #     pos_4 = np.insert(pos, 3, values=1, axis=1)
+        #     # print(extrinsics,pos)
+        #     cam_join_pos = np.dot(extrinsics, pos_4.T).T
+        #     cam_join_pos = np.delete(cam_join_pos, 3, axis=1)  # 2D
+
+        #     # print(cam_join_pos)
+        #     gui_pos = []
+        #     for p in cam_join_pos:
+        #         _p = p/p[2]
+        #         # temp=_p[2]
+        #         # _p[2]=_p[1]
+        #         # _p[1]=temp
+        #         gui_pos.append(_p)
+        #         # print(p,_p)
+        #     # print(np.array(gui_pos))
+        #     pix_pos = np.dot(cam_intrinsics, np.array(gui_pos).T).T
+        #     pix_pos = np.delete(pix_pos, 2, axis=1)  # 像素
+        #     frame_data.append([pos, cam_join_pos, pix_pos])
+
+#         cdf = cdflib.CDF(pkl_file)
+# # print(cdf.cdf_info())
+#         info = cdf.varget("Pose")
+
+#         # u = pkl._Unpickler(open(pkl_file,'rb'))
+#         # u.encoding = 'latin1'
+#         x_list = []
+#         for i, jointPositions in enumerate(info[0]):
+#             points = jointPositions.reshape(-1, 3)*0.001  # 世界坐标系的点
+#             # print( points)
+
+#             # total_frames = int(jointPositions.shape[0]/3)
+#             # skeleton_3d = jointPositions.reshape(-1, 3)
+#             # print(skeleton_3d[0])
+#             # for t in range(total_frames):
+#             #     # print(seq['cam_poses'][t],jointPositions[t])
+#             #     skeleton_3d = jointPos2camPos(seq['cam_poses'][t], jointPositions[t])
+#             x, _ = self.skeleton2tensor(skeleton_3d)
+
+#             #     # transform
+#             #     if self.transform is not None:
+#             #         x = self.transform(x)
+
+#             x_list.append(x)
 
         return x_list
 #reference https://blog.csdn.net/weixin_45436729/article/details/124770186
@@ -181,6 +262,7 @@ class Dataset_Transition(Dataset):
         self.r_list = torch.from_numpy(data['r'].astype('float32'))
         self.intrinsics_list = torch.from_numpy(
             data['intrinsics'].astype('float32'))
+        
         self.uv_1_list = torch.from_numpy(data['uv_1'].astype('float32'))
         self.uv_2_list = torch.from_numpy(data['uv_2'].astype('float32'))
         self.uv_3_list = torch.from_numpy(data['uv_3'].astype('float32'))
@@ -202,11 +284,19 @@ class Dataset_Transition(Dataset):
         self.r_4_list = torch.from_numpy(data['r_4'].astype('float32'))
         self.r_5_list = torch.from_numpy(data['r_5'].astype('float32'))
         self.total_frames = len(self.x_list)
-
+        print(mode,len(self.intrinsics_list)," total_frames=",self.total_frames)
     def __len__(self):
         return self.total_frames
 
     def __getitem__(self, idx):
+        # print(self.pkl_file)
+        # print(self.x_list[idx])
+        # print(self.r_list[idx])
+        # print(self.intrinsics_list[idx])
+        # self.intrinsics_list[idx], \
+        #     self.uv_1_list[idx], self.uv_2_list[idx], self.uv_3_list[idx], self.uv_4_list[idx], self.uv_5_list[idx], \
+        #     self.pos_1_list[idx], self.pos_2_list[idx], self.pos_3_list[idx], self.pos_4_list[idx], self.pos_5_list[idx], \
+        #     self.x_1_list[idx], self.x_2_list[idx], self.x_3_list[idx], self.x_4_list[idx], self.x_5_list[idx])
         return self.x_list[idx], self.r_list[idx], self.intrinsics_list[idx], \
             self.uv_1_list[idx], self.uv_2_list[idx], self.uv_3_list[idx], self.uv_4_list[idx], self.uv_5_list[idx], \
             self.pos_1_list[idx], self.pos_2_list[idx], self.pos_3_list[idx], self.pos_4_list[idx], self.pos_5_list[idx], \

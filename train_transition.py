@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.kl import kl_divergence
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 import os
 # from icecream import ic as print
 from datetime import datetime
@@ -15,7 +15,7 @@ from utils import *
 
 
 # Path setting
-data_path = "./data/latent"
+data_path = "./data/human"
 model_path = "./saved/models/transition-noise"
 sum_path = os.path.join(model_path, "runs_{:%Y-%m-%d_%H-%M-%S}".format(datetime.now()))
 vae_checkpoint = "./saved/models/vae-noise/ae_best.pth"
@@ -107,9 +107,9 @@ if __name__ == '__main__':
     train_set = Dataset_Transition(data_path=data_path, mode='train')
     val_set = Dataset_Transition(data_path=data_path, mode='validation')
     test_set = Dataset_Transition(data_path=data_path, mode='test')
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
-    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
+    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
 
     # Create transition model
     model = Transition(in_features=trans_in_features).to(device)
@@ -129,7 +129,6 @@ if __name__ == '__main__':
     # Create loss criterion & optimizer & tensorboard writer
     criterion = nn.SmoothL1Loss() #nn.MSELoss()
     optimizer = optim.RMSprop(model.parameters(), lr=learning_rate)
-    writer = SummaryWriter(sum_path)
 
     best_loss = float('inf')
     for epoch in range(epochs):
@@ -165,10 +164,7 @@ if __name__ == '__main__':
         loss_3d = sum(losses_3d)/len(losses_3d)
         loss_2d = sum(losses_2d)/len(losses_2d)
         print("Average Training Loss of Epoch {}: {:.6f} | KLD {:.6f} | 3D {:.6f} | 2D {:.6f}".format(epoch+1, training_loss, loss_kld, loss_3d, loss_2d))
-        writer.add_scalars('Loss', {'train': training_loss}, epoch+1)
-        writer.add_scalars('Loss_kld', {'train': loss_kld}, epoch+1)
-        writer.add_scalars('Loss_3d', {'train': loss_3d}, epoch+1)
-        writer.add_scalars('Loss_2d', {'train': loss_2d}, epoch+1)
+
         
         #################################################
         # Validate the model
@@ -185,7 +181,6 @@ if __name__ == '__main__':
         # Compute the average loss
         val_loss = sum(losses)/len(losses)
         print("Average Val Loss: {:.6f}".format(val_loss))
-        writer.add_scalars('Loss', {'validation': val_loss}, epoch+1)
 
         #################################################
         # Test the model
@@ -202,7 +197,7 @@ if __name__ == '__main__':
         # Compute the average loss
         test_loss = sum(losses)/len(losses)
         print("Average Test Loss: {:.6f}".format(test_loss))
-        writer.add_scalars('Loss', {'test': test_loss}, epoch+1)
+        # writer.add_scalars('Loss', {'test': test_loss}, epoch+1)
 
         # Save model
         torch.save(model.state_dict(), os.path.join(model_path, "transition_epoch{:03d}.pth".format(epoch+1)))
