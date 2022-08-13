@@ -67,25 +67,25 @@ mode = 'train'
 np.set_printoptions(suppress=True)
 
 folder_path = "data/human/test"
-pkl_files = [os.path.join(folder_path, pkl) for pkl in os.listdir(folder_path)]
-# print(pkl_files)
-frame_datas = []
+# pkl_files = [os.path.join(folder_path, pkl) for pkl in os.listdir(folder_path)]
+# # print(pkl_files)
+# frame_datas = []
 
-for file_path in pkl_files:
-    print(file_path)
+# for file_path in pkl_files:
+#     print(file_path)
 
-    u = pkl._Unpickler(open(file_path, 'rb'))
-    u.encoding = 'latin1'
-    seq = u.load()
-    x_list = []
-    ps3d=seq['jointPositions']
-    ps2d=seq['poses2d']
-    cam=seq['CAM_P3D']
-    cam_intrinsics=seq['cam_intrinsics']
-    frame_data=[]
-    for i,skeleton_3d in enumerate(cam):
-        frame_data.append([ps3d[i], cam[i], ps2d[i]])
-    frame_datas.append(frame_data)
+#     u = pkl._Unpickler(open(file_path, 'rb'))
+#     u.encoding = 'latin1'
+#     seq = u.load()
+#     x_list = []
+#     ps3d=seq['jointPositions']
+#     ps2d=seq['poses2d']
+#     cam=seq['CAM_P3D']
+#     cam_intrinsics=seq['cam_intrinsics']
+#     frame_data=[]
+#     for i,skeleton_3d in enumerate(cam):
+#         frame_data.append([ps3d[i], cam[i], ps2d[i]])
+#     frame_datas.append(frame_data)
 # Generate data
 x_list = []
 r_list = []
@@ -131,64 +131,86 @@ def get12(skeleton_3d):
 
 
 
-for frame_data in frame_datas:
-    for i, [D3, skeleton_t, poses2d] in enumerate(frame_data):
-        if i > len(frame_data)-7:
-            break
-        # print(i,len(frame_data))
-        # print(D3, D2, DP)
-        # poses2d = frame_data[i][2]
-        # print(poses2d)
-        x_t, r_t = skeleton2tensor(skeleton_t)
-        # print(poses2d)
-        uv_1 = get12(frame_data[i+1][2])
-        uv_2 = get12(frame_data[i+2][2])
-        uv_3 = get12(frame_data[i+3][2])
-        uv_4 = get12(frame_data[i+4][2])
-        uv_5 = get12(frame_data[i+5][2])
-        
-        skeleton_1 = frame_data[i+1][1]
-        skeleton_2 = frame_data[i+2][1]
-        skeleton_3 = frame_data[i+3][1]
-        skeleton_4 = frame_data[i+4][1]
-        skeleton_5 = frame_data[i+5][1]
 
-        pos_1 = tensor2skeleton(*skeleton2tensor(skeleton_1))
-        pos_2 = tensor2skeleton(*skeleton2tensor(skeleton_2))
-        pos_3 = tensor2skeleton(*skeleton2tensor(skeleton_3))
-        pos_4 = tensor2skeleton(*skeleton2tensor(skeleton_4))
-        pos_5 = tensor2skeleton(*skeleton2tensor(skeleton_5))
-        x_1, r_1 = skeleton2tensor(skeleton_1)
-        x_2, r_2 = skeleton2tensor(skeleton_2)
-        x_3, r_3 = skeleton2tensor(skeleton_3)
-        x_4, r_4 = skeleton2tensor(skeleton_4)
-        x_5, r_5 = skeleton2tensor(skeleton_5)
-        if (uv_1 == 0).any() or (uv_2 == 0).any() or (uv_3 == 0).any() or (uv_4 == 0).any() or (uv_5 == 0).any():
-            continue
+import numpy as np
 
-        x_list.append(x_t.cpu().numpy())
-        r_list.append(r_t)
-        intrinsics_list.append(cam_intrinsics)
-        uv_1_list.append(uv_1)
-        uv_2_list.append(uv_2)
-        uv_3_list.append(uv_3)
-        uv_4_list.append(uv_4)
-        uv_5_list.append(uv_5)
-        pos_1_list.append(pos_1)
-        pos_2_list.append(pos_2)
-        pos_3_list.append(pos_3)
-        pos_4_list.append(pos_4)
-        pos_5_list.append(pos_5)
-        x_1_list.append(x_1)
-        x_2_list.append(x_2)
-        x_3_list.append(x_3)
-        x_4_list.append(x_4)
-        x_5_list.append(x_5)
-        r_1_list.append(r_1)
-        r_2_list.append(r_2)
-        r_3_list.append(r_3)
-        r_4_list.append(r_4)
-        r_5_list.append(r_5)
+
+data_3d=np.load("/home/u20/d2/code/VideoPose3D/data/data_3d_h36m.npz",allow_pickle=True)
+data_2d=np.load("/home/u20/d2/code/VideoPose3D/data/data_2d_h36m_gt.npz",allow_pickle=True)
+keypoints_metadata = data_2d['metadata'].item()
+keypoints_symmetry = keypoints_metadata['keypoints_symmetry']
+cam_para=keypoints_metadata['cam']
+# print(cam_para)
+kps_left, kps_right = list(keypoints_symmetry[0]), list(keypoints_symmetry[1])
+# joints_left, joints_right = list(dataset.skeleton().joints_left()), list(dataset.skeleton().joints_right())
+keypoints = data_2d['positions_2d'].item()
+
+# print(data)
+data3d_item=data_3d['positions_3d'].item()
+for subject in data3d_item:
+    print(subject)
+    for action in data3d_item[subject]:
+        # p3=
+        # for cam_idx, kps in enumerate(keypoints[subject][action][0]):
+        #     print(cam_idx,len(kps))
+        for frame,p3 in enumerate( data3d_item[subject][action]):
+            if frame > len(data3d_item[subject][action])-7:
+                continue
+            skeleton_t=keypoints[subject][action][0][0][frame] #cam 3d
+            cam_intrinsics=cam_para[subject]
+            pix2d=keypoints[subject][action][1][0][frame] #pix 2d
+            # print(len(cam3d),len(pix2d))
+
+            x_t, r_t = skeleton2tensor(skeleton_t)
+            # print(poses2d)
+            uv_1 = get12(keypoints[subject][action][1][0][frame+1])
+            uv_2 = get12(keypoints[subject][action][1][0][frame+2])
+            uv_3 = get12(keypoints[subject][action][1][0][frame+3])
+            uv_4 = get12(keypoints[subject][action][1][0][frame+4])
+            uv_5 = get12(keypoints[subject][action][1][0][frame+5])
+            
+            skeleton_1 = keypoints[subject][action][0][0][frame+1]
+            skeleton_2 = keypoints[subject][action][0][0][frame+2]
+            skeleton_3 = keypoints[subject][action][0][0][frame+3]
+            skeleton_4 = keypoints[subject][action][0][0][frame+4]
+            skeleton_5 = keypoints[subject][action][0][0][frame+5]
+            # print(len(skeleton_1),skeleton_1)
+            pos_1 = tensor2skeleton(*skeleton2tensor(skeleton_1))
+            pos_2 = tensor2skeleton(*skeleton2tensor(skeleton_2))
+            pos_3 = tensor2skeleton(*skeleton2tensor(skeleton_3))
+            pos_4 = tensor2skeleton(*skeleton2tensor(skeleton_4))
+            pos_5 = tensor2skeleton(*skeleton2tensor(skeleton_5))
+            x_1, r_1 = skeleton2tensor(skeleton_1)
+            x_2, r_2 = skeleton2tensor(skeleton_2)
+            x_3, r_3 = skeleton2tensor(skeleton_3)
+            x_4, r_4 = skeleton2tensor(skeleton_4)
+            x_5, r_5 = skeleton2tensor(skeleton_5)
+            if (uv_1 == 0).any() or (uv_2 == 0).any() or (uv_3 == 0).any() or (uv_4 == 0).any() or (uv_5 == 0).any():
+                continue
+
+            x_list.append(x_t.cpu().numpy())
+            r_list.append(r_t)
+            intrinsics_list.append(cam_intrinsics)
+            uv_1_list.append(uv_1)
+            uv_2_list.append(uv_2)
+            uv_3_list.append(uv_3)
+            uv_4_list.append(uv_4)
+            uv_5_list.append(uv_5)
+            pos_1_list.append(pos_1)
+            pos_2_list.append(pos_2)
+            pos_3_list.append(pos_3)
+            pos_4_list.append(pos_4)
+            pos_5_list.append(pos_5)
+            x_1_list.append(x_1)
+            x_2_list.append(x_2)
+            x_3_list.append(x_3)
+            x_4_list.append(x_4)
+            x_5_list.append(x_5)
+            r_1_list.append(r_1)
+            r_2_list.append(r_2)
+            r_3_list.append(r_3)
+            r_4_list.append(r_4)
+            r_5_list.append(r_5)
         # print(x_1_list)
 #     break
 # break
@@ -196,7 +218,7 @@ for frame_data in frame_datas:
 x_list = np.stack(x_list, axis=0)
 r_list = np.stack(r_list, axis=0)
 intrinsics_list = np.stack(intrinsics_list, axis=0)
-print(intrinsics_list)
+# print(intrinsics_list)
 uv_1_list = np.stack(uv_1_list, axis=0)
 uv_2_list = np.stack(uv_2_list, axis=0)
 uv_3_list = np.stack(uv_3_list, axis=0)

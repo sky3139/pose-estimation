@@ -1,6 +1,7 @@
 
 import numpy as np
 import cdflib
+np.set_printoptions(suppress=True)
 # file = open("a.txt")
 a=np.zeros((32,11))
 np.set_printoptions(suppress=True)
@@ -59,39 +60,54 @@ def cal_k_p(Points_cali):
 # cal_k_p(Points_cali)
 
 import pickle as pkl
+file=open("data/read.txt")
+pre_read_name=[]
+line = file.readline()
+while 1:
+    line = file.readline().split(' ')
+    if(line[0]=='end'):
+        break
+    line[1]=line[1][:-1]
+    pre_read_name.append(line)
 
+# print(pre_read_name)
+
+
+P3_PATH="data/human/S1/D3_Positions/"
+P2_PATH="data/human/S1/D2_Positions/"
 if __name__ == "__main__":
-    np.set_printoptions(suppress=True)
-    cdf = cdflib.CDF("/home/u20/Downloads/D3_Positions/SittingDown.cdf")
-    cdf_2d=cdflib.CDF("data/D2_Positions/SittingDown.54138969.cdf")
-    info = cdf.varget("Pose")
-    info_2D=cdf_2d.varget("Pose")
-    pose=[]
-    data=dict()
-    data['cam_poses']=[]
-    data['jointPositions']=[]
-    data['poses2d']=[]
-    data['CAM_P3D']=[]
-    for i, v in enumerate(info[0]):
-        points_2d = info_2D[0][i].reshape(-1, 2)  # 世界坐标系的点
-        # data['jointPositions'].append(v)
-        points = v.reshape(-1, 3)*0.001  # 世界坐标系的点
-        if len(pose)==0:
-            ___a=np.hstack((points, points_2d))
-            pose,K=cal_k_p(___a)
-            data['cam_intrinsics']=K
-        p3d=np.insert(points, 3,values=1,axis=1)
-        CAM_P3D=np.dot(pose,p3d.T).T
-        data['jointPositions'].append(points)
-        data['poses2d'].append(points_2d)
-        data['cam_poses'].append(pose)
-        data['CAM_P3D'].append(CAM_P3D)
-        # print(CAM_P3D)
+    for p3_n,p2_n in pre_read_name:
+        print(p3_n,p2_n)
+        cdf = cdflib.CDF(P3_PATH+p3_n+".cdf")
+        cdf_2d=cdflib.CDF(P2_PATH+p2_n+".cdf")
+        info = cdf.varget("Pose")
+        info_2D=cdf_2d.varget("Pose")
+        pose=[]
+        data=dict()
+        data['cam_poses']=[]
+        data['jointPositions']=[]
+        data['poses2d']=[]
+        data['CAM_P3D']=[]
+        for i, v in enumerate(info[0]):
+            points_2d = info_2D[0][i].reshape(-1, 2)  # 世界坐标系的点
+            # data['jointPositions'].append(v)
+            points = v.reshape(-1, 3)*0.001  # 世界坐标系的点
+            if len(pose)==0:
+                ___a=np.hstack((points, points_2d))
+                pose,K=cal_k_p(___a)
+                data['cam_intrinsics']=K
+            p3d=np.insert(points, 3,values=1,axis=1)
+            CAM_P3D=np.dot(pose,p3d.T).T
+            data['jointPositions'].append(points)
+            data['poses2d'].append(points_2d)
+            data['cam_poses'].append(pose)
+            data['CAM_P3D'].append(CAM_P3D)
+            # print(CAM_P3D)
 
-    # print(data['jointPositions'])
-    with open("data/human/test/medicine.pkl", "wb") as f:
-        pkl.dump(data, f)
-    with open("data/human/train/medicine.pkl", "wb") as f:
-        pkl.dump(data, f)
-    with open("data/human/validation/medicine.pkl", "wb") as f:
-        pkl.dump(data, f)
+        # print(data['jointPositions'])
+        with open("data/human/test/{0}.pkl".format(p3_n), "wb") as f:
+            pkl.dump(data, f)
+        with open("data/human/train/{0}.pkl".format(p3_n), "wb") as f:
+            pkl.dump(data, f)
+        with open("data/human/validation/{0}.pkl".format(p3_n), "wb") as f:
+            pkl.dump(data, f)
