@@ -6,7 +6,9 @@ import pickle as pkl
 import numpy as np
 # from icecream import ic as print
 from utils import *
-def skeleton2tensor( skeleton_3d):
+
+
+def skeleton2tensor(skeleton_3d):
     # joint positions
     # x_0, y_0, z_0 = skeleton_3d[11]  # LShoulder
     # x_1, y_1, z_1 = skeleton_3d[14]  # RShoulder
@@ -57,36 +59,22 @@ def skeleton2tensor( skeleton_3d):
         np.array([x_11, y_11, z_11]) - np.array([x_10, y_10, z_10]))
 
     x = torch.Tensor([x_0, y_0, z_0, theta_1, phi_1, theta_2, phi_2, theta_3, phi_3, theta_4, phi_4, theta_5,
-                        phi_5, theta_6, phi_6, theta_7, phi_7, theta_8, phi_8, theta_9, phi_9, theta_10, phi_10, theta_11, phi_11])
+                      phi_5, theta_6, phi_6, theta_7, phi_7, theta_8, phi_8, theta_9, phi_9, theta_10, phi_10, theta_11, phi_11])
     r = torch.Tensor([r_1, r_2, r_3, r_4, r_5, r_6,
-                        r_7, r_8, r_9, r_10, r_11])
+                      r_7, r_8, r_9, r_10, r_11])
     return x, r
+
+
 # Hyperparameters
 data_path = "./data/human"
-mode = 'train'
+mode = 'test'
+if mode == 'train':
+    train_list =["S1", "S5", "S6", "S7", "S8"]
+else :
+    train_list =["S9", "S11"]
 np.set_printoptions(suppress=True)
 
 folder_path = "data/human/test"
-# pkl_files = [os.path.join(folder_path, pkl) for pkl in os.listdir(folder_path)]
-# # print(pkl_files)
-# frame_datas = []
-
-# for file_path in pkl_files:
-#     print(file_path)
-
-#     u = pkl._Unpickler(open(file_path, 'rb'))
-#     u.encoding = 'latin1'
-#     seq = u.load()
-#     x_list = []
-#     ps3d=seq['jointPositions']
-#     ps2d=seq['poses2d']
-#     cam=seq['CAM_P3D']
-#     cam_intrinsics=seq['cam_intrinsics']
-#     frame_data=[]
-#     for i,skeleton_3d in enumerate(cam):
-#         frame_data.append([ps3d[i], cam[i], ps2d[i]])
-#     frame_datas.append(frame_data)
-# Generate data
 x_list = []
 r_list = []
 intrinsics_list = []
@@ -129,36 +117,37 @@ def get12(skeleton_3d):
     return np.array(ans)
 
 
-
-
-
-import numpy as np
-
-
-data_3d=np.load("/home/u20/d2/code/VideoPose3D/data/data_3d_h36m.npz",allow_pickle=True)
-data_2d=np.load("/home/u20/d2/code/VideoPose3D/data/data_2d_h36m_gt.npz",allow_pickle=True)
+data_3d = np.load(
+    "/home/u20/d2/code/VideoPose3D/data/data_3d_h36m_mini.npz", allow_pickle=True)
+data_2d = np.load(
+    "/home/u20/d2/code/VideoPose3D/data/data_2d_h36m_gt_mini.npz", allow_pickle=True)
 keypoints_metadata = data_2d['metadata'].item()
 keypoints_symmetry = keypoints_metadata['keypoints_symmetry']
-cam_para=keypoints_metadata['cam']
+cam_para = keypoints_metadata['cam']
 # print(cam_para)
 kps_left, kps_right = list(keypoints_symmetry[0]), list(keypoints_symmetry[1])
 # joints_left, joints_right = list(dataset.skeleton().joints_left()), list(dataset.skeleton().joints_right())
 keypoints = data_2d['positions_2d'].item()
 
 # print(data)
-data3d_item=data_3d['positions_3d'].item()
-for subject in data3d_item:
-    print(subject)
+data3d_item = data_3d['positions_3d'].item()
+
+for subject in train_list:
+    print(mode, subject)
+
     for action in data3d_item[subject]:
-        # p3=
         # for cam_idx, kps in enumerate(keypoints[subject][action][0]):
         #     print(cam_idx,len(kps))
-        for frame,p3 in enumerate( data3d_item[subject][action]):
-            if frame > len(data3d_item[subject][action])-7:
+        frame_len = len(data3d_item[subject][action])-7
+        # print(cam_para[subject][0]["intrinsic"])
+        cam_intrinsics = cam_para[subject][0]["intrinsic"]
+        cam_intrinsics = np.array(cam_intrinsics).reshape(3, 3)
+        # print(cam_intrinsics)
+        for frame, p3 in enumerate(data3d_item[subject][action]):
+            if frame > frame_len:
                 continue
-            skeleton_t=keypoints[subject][action][0][0][frame] #cam 3d
-            cam_intrinsics=cam_para[subject]
-            pix2d=keypoints[subject][action][1][0][frame] #pix 2d
+            skeleton_t = keypoints[subject][action][0][0][frame]  # cam 3d
+            pix2d = keypoints[subject][action][1][0][frame]  # pix 2d
             # print(len(cam3d),len(pix2d))
 
             x_t, r_t = skeleton2tensor(skeleton_t)
@@ -168,7 +157,7 @@ for subject in data3d_item:
             uv_3 = get12(keypoints[subject][action][1][0][frame+3])
             uv_4 = get12(keypoints[subject][action][1][0][frame+4])
             uv_5 = get12(keypoints[subject][action][1][0][frame+5])
-            
+
             skeleton_1 = keypoints[subject][action][0][0][frame+1]
             skeleton_2 = keypoints[subject][action][0][0][frame+2]
             skeleton_3 = keypoints[subject][action][0][0][frame+3]
@@ -249,9 +238,5 @@ data = {'x': x_list, 'r': r_list, 'intrinsics': intrinsics_list,
         'pos_1': pos_1_list, 'pos_2': pos_2_list, 'pos_3': pos_3_list, 'pos_4': pos_4_list, 'pos_5': pos_5_list,
         'x_1': x_1_list, 'x_2': x_2_list, 'x_3': x_3_list, 'x_4': x_4_list, 'x_5': x_5_list,
         'r_1': r_1_list, 'r_2': r_2_list, 'r_3': r_3_list, 'r_4': r_4_list, 'r_5': r_5_list, }
-with open('./data/human/latent-{}-multi.pkl'.format("train1"), 'wb') as handle:
-    pkl.dump(data, handle, protocol=pkl.HIGHEST_PROTOCOL)
-with open('./data/human/latent-{}-multi.pkl'.format("test1"), 'wb') as handle:
-    pkl.dump(data, handle, protocol=pkl.HIGHEST_PROTOCOL)
-with open('./data/human/latent-{}-multi.pkl'.format("validation1"), 'wb') as handle:
+with open('./data/human/latent-{}-multi.pkl'.format(mode), 'wb') as handle:
     pkl.dump(data, handle, protocol=pkl.HIGHEST_PROTOCOL)

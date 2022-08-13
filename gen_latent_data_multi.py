@@ -10,7 +10,7 @@ from utils import *
 # Hyperparameters
 # data_path = "./data/3DPW/sequenceFiles"
 data_path = "data/human"
-mode = 'train'
+mode = 'test'
 
 # Generate data
 folder_path = os.path.join(data_path, mode)
