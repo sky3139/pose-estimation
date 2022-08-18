@@ -12,6 +12,7 @@ from datetime import datetime
 from models import Transition, VAE
 from dataset import Dataset_Transition
 from utils import *
+from icecream import ic as print
 
 
 # Path setting
@@ -143,7 +144,7 @@ if __name__ == '__main__':
         for batch_idx, data in enumerate(train_loader):
             # get the inputs
             x, r, intrinsics, uv_1, uv_2, uv_3, uv_4, uv_5, pos_1, pos_2, pos_3, pos_4, pos_5, x_1, x_2, x_3, x_4, x_5 = [item.to(device) for item in data]
-
+            # print(intrinsics)
             optimizer.zero_grad()
             loss, loss_kld, loss_3d, loss_2d = loss_func(model, criterion, x, r, intrinsics, uv_1, uv_2, uv_3, uv_4, uv_5, pos_1, pos_2, pos_3, pos_4, pos_5, x_1, x_2, x_3, x_4, x_5)
             losses.append(loss.item())
