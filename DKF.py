@@ -1,6 +1,4 @@
-import imp
-import os
-import enum
+import d2gen_human as d2
 import numpy as np
 from numpy import sin, cos
 from icecream import ic as print
@@ -12,65 +10,6 @@ from torch.autograd.functional import jacobian
 
 from models import VAE, Transition
 from utils import *
-
-
-def skeleton2tensor(skeleton_3d):
-    # joint positions
-    # x_0, y_0, z_0 = skeleton_3d[11]  # LShoulder
-    # x_1, y_1, z_1 = skeleton_3d[14]  # RShoulder
-    # x_2, y_2, z_2 = skeleton_3d[0]  # LHip
-    # x_3, y_3, z_3 = skeleton_3d[1]  # RHip
-    # x_4, y_4, z_4 = skeleton_3d[12]  # LElbow
-    # x_5, y_5, z_5 = skeleton_3d[13]  # LWrist
-    # x_6, y_6, z_6 = skeleton_3d[15]  # RElbow
-    # x_7, y_7, z_7 = skeleton_3d[16]  # RWrist
-    # x_8, y_8, z_8 = skeleton_3d[5]  # LKnee
-    # x_9, y_9, z_9 = skeleton_3d[6]  # LAnkle
-    # x_10, y_10, z_10 = skeleton_3d[2]  # Rknee
-    # x_11, y_11, z_11 = skeleton_3d[3]  # RAnkle
-    x_0, y_0, z_0 = skeleton_3d[17]  # LShoulder
-    x_1, y_1, z_1 = skeleton_3d[25]  # RShoulder
-    x_2, y_2, z_2 = skeleton_3d[6]  # LHip
-    x_3, y_3, z_3 = skeleton_3d[1]  # RHip
-    x_4, y_4, z_4 = skeleton_3d[18]  # LElbow
-    x_5, y_5, z_5 = skeleton_3d[19]  # LWrist
-    x_6, y_6, z_6 = skeleton_3d[26]  # RElbow
-    x_7, y_7, z_7 = skeleton_3d[27]  # RWrist
-    x_8, y_8, z_8 = skeleton_3d[7]  # LKnee
-    x_9, y_9, z_9 = skeleton_3d[8]  # LAnkle
-    x_10, y_10, z_10 = skeleton_3d[2]  # Rknee
-    x_11, y_11, z_11 = skeleton_3d[3]  # RAnkle
-    # convert to spherical representation
-    r_1, theta_1, phi_1 = cartesian2spherical(
-        np.array([x_1, y_1, z_1]) - np.array([x_0, y_0, z_0]))
-    r_2, theta_2, phi_2 = cartesian2spherical(
-        np.array([x_2, y_2, z_2]) - np.array([(x_0 + x_1) / 2, (y_0 + y_1) / 2, (z_0 + z_1) / 2]))
-    r_3, theta_3, phi_3 = cartesian2spherical(
-        np.array([x_3, y_3, z_3]) - np.array([x_2, y_2, z_2]))
-    r_4, theta_4, phi_4 = cartesian2spherical(
-        np.array([x_4, y_4, z_4]) - np.array([x_0, y_0, z_0]))
-    r_5, theta_5, phi_5 = cartesian2spherical(
-        np.array([x_5, y_5, z_5]) - np.array([x_4, y_4, z_4]))
-    r_6, theta_6, phi_6 = cartesian2spherical(
-        np.array([x_6, y_6, z_6]) - np.array([x_1, y_1, z_1]))
-    r_7, theta_7, phi_7 = cartesian2spherical(
-        np.array([x_7, y_7, z_7]) - np.array([x_6, y_6, z_6]))
-    r_8, theta_8, phi_8 = cartesian2spherical(
-        np.array([x_8, y_8, z_8]) - np.array([x_2, y_2, z_2]))
-    r_9, theta_9, phi_9 = cartesian2spherical(
-        np.array([x_9, y_9, z_9]) - np.array([x_8, y_8, z_8]))
-    r_10, theta_10, phi_10 = cartesian2spherical(
-        np.array([x_10, y_10, z_10]) - np.array([x_3, y_3, z_3]))
-    r_11, theta_11, phi_11 = cartesian2spherical(
-        np.array([x_11, y_11, z_11]) - np.array([x_10, y_10, z_10]))
-
-    x = torch.Tensor([x_0, y_0, z_0, theta_1, phi_1, theta_2, phi_2, theta_3, phi_3, theta_4, phi_4, theta_5,
-                      phi_5, theta_6, phi_6, theta_7, phi_7, theta_8, phi_8, theta_9, phi_9, theta_10, phi_10, theta_11,
-                      phi_11])
-    r = torch.Tensor([r_1, r_2, r_3, r_4, r_5, r_6,
-                      r_7, r_8, r_9, r_10, r_11])
-    return x, r
-
 
 # Device setting
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -110,26 +49,9 @@ transition.load_state_dict(torch.load(trans_checkpoint))
 vae = VAE(in_features=vae_in_features).to(device)
 vae.load_state_dict(torch.load(vae_checkpoint))
 
-####################################################
-# parse data file
-####################################################
-# u = pkl._Unpickler(open(pkl_file, 'rb'))
-# u.encoding = 'latin1'
-# seq = u.load()
-# jointPositions = seq['jointPositions'][actor_id]
-# total_frames = jointPositions.shape[0]
-# jointPositions = jointPositions.reshape(
-# total_frames, -1, 3)     # size: [T, 24, 3]
-# size: [T, 4, 4]
-# cam_poses = seq['cam_poses']
-# size: [T, 3, 18]
-# poses2d = seq['poses2d'][actor_id]
 
-####################################################
-# kalman filter
-####################################################
-# initialize state
-data_3d = np.load("/home/u20/d2/code/PoseFormer_bak/data/data_3d_h36m.npz", allow_pickle=True)
+data_3d = np.load(
+    "/home/u20/d2/code/PoseFormer_bak/data/data_3d_h36m.npz", allow_pickle=True)
 # data_3d = np.load("./data/data_3d_h36m.npz", allow_pickle=True)
 data3d_item = data_3d['positions_3d'].item()
 
@@ -192,7 +114,9 @@ def get12(skeleton_3d):
     ans.append(skeleton_3d[2])  # Rknee
     ans.append(skeleton_3d[3])  # RAnkle
     return np.array(ans)
-def quaternion_to_rotation_matrix(quat,t):
+
+
+def quaternion_to_rotation_matrix(quat, t):
     q = quat.copy()
     n = np.dot(q, q)
     if n < np.finfo(q.dtype).eps:
@@ -201,18 +125,16 @@ def quaternion_to_rotation_matrix(quat,t):
     q = np.outer(q, q)
     rot_matrix = np.array(
         [[1.0 - q[2, 2] - q[3, 3], q[1, 2] + q[3, 0], q[1, 3] - q[2, 0], t[0]],
-        [q[1, 2] - q[3, 0], 1.0 - q[1, 1] - q[3, 3], q[2, 3] + q[1, 0], t[1]],
-        [q[1, 3] + q[2, 0], q[2, 3] - q[1, 0], 1.0 - q[1, 1] - q[2, 2], t[2]],
-        [0.0, 0.0, 0.0, 1.0]],
+         [q[1, 2] - q[3, 0], 1.0 - q[1, 1] - q[3, 3], q[2, 3] + q[1, 0], t[1]],
+         [q[1, 3] + q[2, 0], q[2, 3] - q[1, 0], 1.0 - q[1, 1] - q[2, 2], t[2]],
+         [0.0, 0.0, 0.0, 1.0]],
         dtype=q.dtype)
     return rot_matrix
-cam_1R=quaternion_to_rotation_matrix(np.array([0.1407056450843811, -0.1500701755285263, -0.755240797996521, 0.6223280429840088]),[1.8411070556640625, 4.95528466796875, 1.5634454345703125])
 
-def word2cam(wordp3):
-    g_p3=np.insert(wordp3,3,1,axis=1).T
-    cam_p3s=np.dot(cam_1R,g_p3).T
-    skeleton_t=np.delete(cam_p3s,3,axis=1)
-    return skeleton_t
+
+cam_1R = quaternion_to_rotation_matrix(np.array([0.1407056450843811, -0.1500701755285263, -0.755240797996521, 0.6223280429840088]), [
+                                       1.8411070556640625, 4.95528466796875, 1.5634454345703125])
+
 cam_name = []
 cams_K = []
 for v in data3d_item["cam"]:
@@ -221,7 +143,8 @@ for v in data3d_item["cam"]:
                   v["focal_length"][1], v["center"][1], 0, 0, 1]).reshape(3, 3)
     cams_K.append(K)
 data = dict()
-intrinsics = intrinsics = torch.from_numpy(cams_K[0].astype('float32').reshape(3, 3)).to(device)
+intrinsics = torch.from_numpy(
+    cams_K[0].astype('float32').reshape(3, 3)).to(device)
 # print(cam_name,cams_K)
 for subject in train_list:
     print(mode, subject)
@@ -234,12 +157,13 @@ for subject in train_list:
         # print(cam_intrinsics)
         p3s, p2s_4cam = data3d_item[subject][action]
         p2s = p2s_4cam[cam_name[0]]
-
+        _p, _k = d2.cal_k_p(
+            np.hstack((p3s.reshape(-1, 3), p2s.reshape(-1, 2))))
         for t, skeleton_gt_w in enumerate(p3s):
             # print(t)
             if (t == 0):
-                skeleton_0 = word2cam(skeleton_gt_w)
-                x_0, r_0 = skeleton2tensor(skeleton_0)
+                skeleton_0 = d2.word2cam(_p, skeleton_gt_w)
+                x_0, r_0 = d2.skeleton2tensor(skeleton_0)
                 pos_0 = tensor2skeleton(x_0, r_0)
 
                 x = x_0.to(device)
@@ -254,13 +178,10 @@ for subject in train_list:
             # print(len(p3s[frame]),len(p2s[frame]))
             #     break
             # break
-
-            # for t in range(1, total_frames):
-
             # observation
             uv_t = torch.from_numpy(get12(p2s[t]).astype('float32')).to(device)
             # skeleton_gt = jointPos2camPos(cam_poses[t], jointPositions[t])
-            x_gt, r_gt = skeleton2tensor(word2cam(skeleton_gt_w))
+            x_gt, r_gt = d2. skeleton2tensor(d2.word2cam(_p, skeleton_gt_w))
             pos_gt = tensor2skeleton(x_gt, r_gt).to(device)
             uv_gt = intrinsics @ pos_gt.T
             uv_gt /= uv_gt[2, :].clone()
@@ -273,7 +194,8 @@ for subject in train_list:
             # prediction
             ####################################################
             # l--->l t+1
-            l_mu_hat, l_var_hat = transition(l_mu.unsqueeze(0), l_var.unsqueeze(0))
+            l_mu_hat, l_var_hat = transition(
+                l_mu.unsqueeze(0), l_var.unsqueeze(0))
             # l_mu_hat, l_logvar_hat = vae.encode(x_gt.unsqueeze(0).to(device))
             # l_var_hat = torch.diag_embed(torch.exp(l_logvar_hat))
             l_var = l_var_hat.squeeze()
@@ -287,8 +209,8 @@ for subject in train_list:
             uv_mu_hat, uv_var_hat = pos2uv_distribution(
                 pos_mu_hat, pos_var_hat, intrinsics.unsqueeze(0))
 
-
             # sampling
+
             def l2uv(l):
                 # l--->x
                 x = vae.decode(l)
@@ -297,7 +219,6 @@ for subject in train_list:
                 # pos--->uv
                 uv = pos2uv(pos, intrinsics.unsqueeze(0))
                 return torch.masked_select(uv, mask).reshape(-1, 2)  # uv
-
 
             # l_distrib = MultivariateNormal(loc=l_mu_hat, covariance_matrix=l_var_hat)
             # l_hat = l_distrib.rsample()
@@ -425,9 +346,9 @@ ax_right.set_zlim3d([0, 5])
 ax_right.set_zlabel('Z')
 # create animation
 lines_left = [ax_left.plot([], [], [], 'royalblue', marker='o')[
-                  0] for i in range(11)]
+    0] for i in range(11)]
 lines_right = [ax_right.plot([], [], [], 'royalblue', marker='o')[
-                   0] for i in range(11)]
+    0] for i in range(11)]
 # import io
 # import PIL,cv2
 # for i in range(30):
@@ -443,6 +364,7 @@ lines_right = [ax_right.plot([], [], [], 'royalblue', marker='o')[
 #     data = np.asarray(dataPIL)
 #     cv2.imshow('image', data)
 #     cv2.waitKey(1)
-ani = animation.FuncAnimation(fig, run, np.arange(len(line_x_all_gt) - 1), interval=30)
+ani = animation.FuncAnimation(fig, run, np.arange(
+    len(line_x_all_gt) - 1), interval=30)
 FFwriter = animation.FFMpegWriter(fps=30)
 ani.save('./save/videos/DKF.mp4', writer=FFwriter)
